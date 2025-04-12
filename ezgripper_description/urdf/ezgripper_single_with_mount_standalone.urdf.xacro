@@ -2,10 +2,14 @@
 <robot name="ezgripper_single_mount_instantiation" xmlns:xacro="http://ros.org/wiki/xacro">
 
     <!-- Include centralized material definitions -->
-    <xacro:include filename="$(find ezgripper_description)/urdf/materials.xacro" />
+    <xacro:include filename="$(find ezgripper_description)/urdf/materials.urdf.xacro" />
+    <!-- Define materials -->
     <xacro:define_ezgripper_materials />
 
-    <xacro:property name="prefix" value="left" />
+    <!-- Robot prefix parameter for consistent naming across all components -->
+    <xacro:arg name="prefix" default="PrefixDefault"/>
+    
+    <xacro:property name="prefix" value="$(arg prefix)" />
     <xacro:property name="ezgripper_offset_x" value="0.00"/>
     <xacro:property name="ezgripper_offset_y" value="0.0"/>
     <xacro:property name="ezgripper_offset_z" value="0.21"/>

@@ -28,6 +28,12 @@ def generate_launch_description():
         description='Use simulation time: "true" or "false"'
     )
     
+    enable_hardware_arg = DeclareLaunchArgument(
+        'enable_hardware',
+        default_value='false',
+        description='Enable hardware: "true" or "false"'
+    )
+    
     namespace_arg = DeclareLaunchArgument(
         'namespace',
         default_value='ezgripper',
@@ -46,6 +52,14 @@ def generate_launch_description():
         description='Whether to launch robot state publisher'
     )
     
+    
+    # Add a prefix argument
+    prefix_arg = DeclareLaunchArgument(
+        'prefix',
+        default_value='left_arm',
+        description='Arm name for the gripper assembly (e.g., left_arm, right_arm)'
+    )
+    
     # Include gripper joint publisher launch file
     joint_publisher_include = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -54,7 +68,8 @@ def generate_launch_description():
         launch_arguments={
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'namespace': LaunchConfiguration('namespace'),
-            'output_topic': '/gripper_joint_states'
+            'output_topic': '/ezgripper/joint_states',
+            'prefix': LaunchConfiguration('prefix')
         }.items(),
         condition=IfCondition(LaunchConfiguration('launch_joint_publisher'))
     )
@@ -66,7 +81,8 @@ def generate_launch_description():
         ),
         launch_arguments={
             'use_sim_time': LaunchConfiguration('use_sim_time'),
-            'namespace': LaunchConfiguration('namespace')
+            'namespace': LaunchConfiguration('namespace'),
+            'prefix': LaunchConfiguration('prefix')
         }.items()
     )
     
@@ -80,11 +96,15 @@ def generate_launch_description():
         parameters=[
             {
                 'use_sim_time': LaunchConfiguration('use_sim_time'),
-                'robot_description': Command(['xacro', ' ', urdf_file])
+                'robot_description': Command(['xacro', ' ', urdf_file,
+
+                                            ' prefix:=', LaunchConfiguration('prefix')]),
+                'publish_frequency': 50.0,
+                'ignore_timestamp': True
             }
         ],
         remappings=[
-            ('/joint_states', '/gripper_joint_states')
+            ('/joint_states', '/ezgripper/joint_states')
         ],
         condition=IfCondition(LaunchConfiguration('launch_robot_state_publisher'))
     )
@@ -100,12 +120,30 @@ def generate_launch_description():
         )
     )
     
+    # Global shutdown handler to ensure all processes are terminated
+    shutdown_handler = RegisterEventHandler(
+        OnShutdown(
+            on_shutdown=[
+                LogInfo(msg=['Shutting down EZGripper Single description']),
+                # Execute a cleanup command to kill any lingering processes
+                Node(
+                    package='ezgripper_description',
+                    executable='cleanup_ezgripper_processes.py',
+                    name='cleanup_ezgripper_processes',
+                    output='screen'
+                )
+            ]
+        )
+    )
+    
     return LaunchDescription([
         # Launch arguments
         use_sim_time_arg,
+        enable_hardware_arg,
         namespace_arg,
         launch_joint_publisher_arg,
         launch_robot_state_publisher_arg,
+        prefix_arg,
         
         # Included launch files
         joint_publisher_include,
@@ -115,5 +153,6 @@ def generate_launch_description():
         robot_state_publisher,
         
         # Event handlers
-        robot_state_publisher_exit_handler
+        robot_state_publisher_exit_handler,
+        shutdown_handler
     ])

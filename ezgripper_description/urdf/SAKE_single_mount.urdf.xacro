@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot name="SAKE_single_mount" xmlns:xacro="http://ros.org/wiki/xacro">
 
-    <!-- Include centralized material definitions (properties only) -->
-    <xacro:include filename="$(find ezgripper_description)/urdf/materials.xacro" />
+    <!-- Material definitions are included in the parent file -->
     
 
 	<xacro:macro name="SAKE_single_mount" params="prefix parent_link *origin">

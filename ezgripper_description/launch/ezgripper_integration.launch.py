@@ -92,5 +92,8 @@ def generate_launch_description():
         launch_robot_state_publisher_arg,
         
         # Include component launch
-        component_launch
+        component_launch,
+        
+        # Add the shutdown handler
+        shutdown_handler
     ])

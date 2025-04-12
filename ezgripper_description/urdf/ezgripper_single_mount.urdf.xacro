@@ -12,7 +12,7 @@
 				<geometry>
 					<mesh filename="file://$(find ezgripper_description)/meshes/visual/SAKE_Single_Mount.stl"/>
 				</geometry>
-				<material name="blue"/>
+				<material name="ezgripper_blue"/>
 			</visual>
 			<collision>
 				<xacro:insert_block name="origin"/>
@@ -53,7 +53,7 @@
 				<geometry>
 					<mesh filename="file://$(find ezgripper_description)/meshes/visual/SAKE_Palm_IM.stl"/>
 				</geometry>
-				<material name="blue"/>
+				<material name="ezgripper_blue"/>
 			</visual>
 			<collision>
 				<origin xyz="0.0 0 0" rpy="0 0 0"/>
@@ -114,7 +114,7 @@
 				<geometry>
 					<mesh filename="file://$(find ezgripper_description)/meshes/visual/SAKE_Finger_L1_IM.stl"/>
 				</geometry>
-				<material name="grey"/>
+				<material name="ezgripper_grey"/>
 			</visual>
 			<collision>
 				<origin xyz="0 0 0" rpy="0 0 0"/>
@@ -143,7 +143,7 @@
 				<geometry>
 					<mesh filename="file://$(find ezgripper_description)/meshes/visual/SAKE_Finger_L2_IM.stl"/>
 				</geometry>
-				<material name="grey"/>
+				<material name="ezgripper_grey"/>
 			</visual>
 			<collision>
 				<origin xyz="0 0 0" rpy="0 0 0"/>
@@ -172,7 +172,7 @@
 				<geometry>
 					<mesh filename="file://$(find ezgripper_description)/meshes/visual/SAKE_Finger_Pad_IM.stl"/>
 				</geometry>
-				<material name="grey"/>
+				<material name="ezgripper_grey"/>
 			</visual>
 			<collision>
 				<origin xyz="0 0 0" rpy="0 0 0"/>
@@ -255,7 +255,7 @@
       <plugin>gazebo_ros2_control/GazeboSystem</plugin>
     </hardware>
 
-		<joint name="left_ezgripper_knuckle_palm_L1_1">
+		<joint name="${prefix}_ezgripper_knuckle_palm_L1_1">
 
       <command_interface name="position"/>
 
@@ -265,9 +265,9 @@
     </joint>
 
 
-    <joint name="left_ezgripper_knuckle_palm_L1_2">
+    <joint name="${prefix}_ezgripper_knuckle_palm_L1_2">
 
-			<param name="mimic">left_ezgripper_knuckle_palm_L1_1</param>
+			<param name="mimic">${prefix}_ezgripper_knuckle_palm_L1_1</param>
 			<param name="multiplier">1</param>
 
 			<command_interface name="position"/>

@@ -76,7 +76,7 @@ def run_debug_commands(output_file):
         ("ROS2 Node List", f"{ros2_bin} node list"),
         ("ROS2 Topic List", f"{ros2_bin} topic list"),
         ("ROS2 Parameter List", f"{ros2_bin} param list"),
-        ("Robot Prefix Parameter Value", f"{ros2_bin} param get /robot_state_publisher robot_prefix 2>/dev/null || echo \"Parameter not found\""),
+        ("Robot Prefix Parameter Value", f"{ros2_bin} param get /robot_state_publisher prefix 2>/dev/null || echo \"Parameter not found\""),
         ("Node Info for Joint State Publisher", f"{ros2_bin} node info /ezgripper/gripper_joint_publisher 2>/dev/null || echo \"Node not found or not running\""),
         ("Node Info for Robot State Publisher", f"{ros2_bin} node info /ezgripper/robot_state_publisher 2>/dev/null || echo \"Node not found or not running\""),
         ("Checking EZGripper Joint State Topic", f"{timeout_bin} 3 {ros2_bin} topic echo --once /ezgripper/joint_states 2>/dev/null || echo \"No messages received\""),

@@ -7,41 +7,41 @@ components:
       publish_frequency: 30.0  # Hz
     joints:
       # Single gripper joints
-      - name: left_ezgripper_knuckle_palm_L1_1
+      - name: ezgripper_knuckle_palm_L1_1
         command_topic: '/ezgripper/left_ezgripper/command'
         state_topic: '/ezgripper/left_ezgripper/state'
         type: position
-      - name: left_ezgripper_knuckle_palm_L1_2
+      - name: ezgripper_knuckle_palm_L1_2
         command_topic: '/ezgripper/left_ezgripper/command'
         state_topic: '/ezgripper/left_ezgripper/state'
         type: position
         
       # Triple gripper joints - first gripper
-      - name: left_gripper1_ezgripper_knuckle_palm_L1_1
+      - name: gripper1_ezgripper_knuckle_palm_L1_1
         command_topic: '/ezgripper/left_gripper1_ezgripper/command'
         state_topic: '/ezgripper/left_gripper1_ezgripper/state'
         type: position
-      - name: left_gripper1_ezgripper_knuckle_palm_L1_2
+      - name: gripper1_ezgripper_knuckle_palm_L1_2
         command_topic: '/ezgripper/left_gripper1_ezgripper/command'
         state_topic: '/ezgripper/left_gripper1_ezgripper/state'
         type: position
         
       # Triple gripper joints - second gripper
-      - name: left_gripper2_ezgripper_knuckle_palm_L1_1
+      - name: gripper2_ezgripper_knuckle_palm_L1_1
         command_topic: '/ezgripper/left_gripper2_ezgripper/command'
         state_topic: '/ezgripper/left_gripper2_ezgripper/state'
         type: position
-      - name: left_gripper2_ezgripper_knuckle_palm_L1_2
+      - name: gripper2_ezgripper_knuckle_palm_L1_2
         command_topic: '/ezgripper/left_gripper2_ezgripper/command'
         state_topic: '/ezgripper/left_gripper2_ezgripper/state'
         type: position
         
       # Triple gripper joints - third gripper
-      - name: left_gripper3_ezgripper_knuckle_palm_L1_1
+      - name: gripper3_ezgripper_knuckle_palm_L1_1
         command_topic: '/ezgripper/left_gripper3_ezgripper/command'
         state_topic: '/ezgripper/left_gripper3_ezgripper/state'
         type: position
-      - name: left_gripper3_ezgripper_knuckle_palm_L1_2
+      - name: gripper3_ezgripper_knuckle_palm_L1_2
         command_topic: '/ezgripper/left_gripper3_ezgripper/command'
         state_topic: '/ezgripper/left_gripper3_ezgripper/state'
         type: position

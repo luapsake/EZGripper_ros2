@@ -2,11 +2,18 @@
 <robot name="ezgripper_single_mount_instantiation" xmlns:xacro="http://ros.org/wiki/xacro">
 
 
-    <xacro:property name="prefix" value="left" />
+    <!-- Robot prefix parameter for consistent naming across all components -->
+    <xacro:arg name="prefix" default="PrefixDefault"/>
+    <!-- Double gripper uses fixed unit numbers: 1 for gripper1, 2 for gripper2 -->
+    
+    <xacro:property name="prefix" value="$(arg prefix)" />
     <xacro:property name="ezgripper_offset_x" value="0.00"/>
     <xacro:property name="ezgripper_offset_y" value="0.0"/>
     <xacro:property name="ezgripper_offset_z" value="0.0"/>
 
+    <xacro:include filename="$(find ezgripper_description)/urdf/materials.urdf.xacro" />
+    <!-- Define materials -->
+    <xacro:define_ezgripper_materials />
     <xacro:include filename="ezgripper_double_with_mount.urdf.xacro" />
 
     <!-- Instantiate the gripper and mount assembly with specified parameters -->
@@ -27,7 +34,7 @@
                 <cylinder length="0.42" radius="0.02"/>
             </geometry>
             <origin rpy="0 0 0" xyz="0 0 0.21"/>
-            <material name="black"/>
+            <material name="ezgripper_black"/>
         </visual>
         <collision>
             <geometry>

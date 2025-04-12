@@ -21,6 +21,7 @@
 					<mesh filename="file://$(find ezgripper_description)/meshes/visual/SAKE_Double_Mount.stl"/>
 				</geometry>
 				<material name="blue"/>
+				<!-- Using material defined in materials.urdf.xacro -->
 			</visual>
 			<collision>
 				<origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>

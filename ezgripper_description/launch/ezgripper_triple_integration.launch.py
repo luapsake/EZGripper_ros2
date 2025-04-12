@@ -64,29 +64,7 @@ def generate_launch_description():
         description='Prefix for robot joint names'
     )
     
-    unit_num_arg = DeclareLaunchArgument(
-        'unit_num',
-        default_value='1',
-        description='Legacy parameter - kept for backward compatibility'
-    )
-    
-    unit_num_left_arg = DeclareLaunchArgument(
-        'unit_num_left',
-        default_value='1',
-        description='Unit number for the left gripper position'
-    )
-    
-    unit_num_center_arg = DeclareLaunchArgument(
-        'unit_num_center',
-        default_value='2',
-        description='Unit number for the center gripper position'
-    )
-    
-    unit_num_right_arg = DeclareLaunchArgument(
-        'unit_num_right',
-        default_value='3',
-        description='Unit number for the right gripper position'
-    )
+    # Unit numbers are now embedded in the xacro files and no longer needed as parameters
     
     # Include the triple gripper component launch file
     component_launch = IncludeLaunchDescription(
@@ -94,17 +72,16 @@ def generate_launch_description():
             os.path.join(pkg_dir, 'launch', 'ezgripper_triple_description.launch.py')
         ),
         launch_arguments={
+            # Always pass parameters as strings to avoid type conversion issues
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'enable_hardware': LaunchConfiguration('enable_hardware'),
             'namespace': LaunchConfiguration('namespace'),
             'launch_joint_publisher': LaunchConfiguration('launch_joint_publisher'),
             'launch_static_tf_publisher': LaunchConfiguration('launch_static_tf_publisher'),
             'launch_robot_state_publisher': LaunchConfiguration('launch_robot_state_publisher'),
-            'prefix': LaunchConfiguration('prefix'),  # This must be passed correctly as empty string when needed
-            'unit_num': LaunchConfiguration('unit_num'),  # Legacy parameter
-            'unit_num_left': LaunchConfiguration('unit_num_left'),
-            'unit_num_center': LaunchConfiguration('unit_num_center'),
-            'unit_num_right': LaunchConfiguration('unit_num_right')
+            'prefix': LaunchConfiguration('prefix'),
+            # Add rviz parameter explicitly to avoid empty tuple errors
+            'rviz': 'false'
         }.items()
     )
     
@@ -120,10 +97,6 @@ def generate_launch_description():
         launch_static_tf_publisher_arg,
         launch_robot_state_publisher_arg,
         prefix_arg,
-        unit_num_left_arg,
-        unit_num_center_arg,
-        unit_num_right_arg,
-        unit_num_arg,
         
         # Include the triple gripper component
         component_launch

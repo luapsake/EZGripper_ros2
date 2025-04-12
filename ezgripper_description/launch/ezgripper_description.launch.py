@@ -47,7 +47,7 @@ def generate_launch_description():
     gripper_joint_publisher = Node(
         package='ezgripper_description',
         executable='gripper_joint_publisher',
-        name='joint_position_publisher',
+        name='gripper_joint_publisher',  # Updated name to match the executable
         namespace=LaunchConfiguration('namespace'),
         output='screen',
         parameters=[
@@ -55,9 +55,7 @@ def generate_launch_description():
                 'use_sim_time': LaunchConfiguration('use_sim_time')
             }
         ],
-        remappings=[
-            ('gripper_joint_states', 'joint_states')
-        ],
+        # Removed unnecessary remapping since we're publishing directly to /ezgripper/joint_states
         condition=IfCondition(LaunchConfiguration('launch_joint_publisher'))
     )
     

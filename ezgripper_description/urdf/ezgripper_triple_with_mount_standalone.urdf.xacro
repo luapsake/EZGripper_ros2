@@ -1,19 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <robot name="ezgripper_triple_mount_instantiation" xmlns:xacro="http://ros.org/wiki/xacro">
+    <!-- Arm name parameter for consistent naming across all components -->
+    <xacro:arg name="prefix" default="left_arm"/>
+    <!-- Define the prefix property to ensure it's accessible in all included files -->
+    <xacro:property name="prefix" value="$(arg prefix)"/>
+    <!-- Triple gripper uses fixed unit numbers: 1 for left, 2 for center, 3 for right -->
+    <!-- Triple gripper uses fixed unit numbers: 1 for left, 2 for center, 3 for right -->
 
     <!-- Include centralized material definitions -->
-    <xacro:include filename="$(find ezgripper_description)/urdf/materials.xacro" />
+    <xacro:include filename="$(find ezgripper_description)/urdf/materials.urdf.xacro" />
+    <!-- Define materials -->
     <xacro:define_ezgripper_materials />
 
-    <xacro:property name="prefix" value="left" />
     <xacro:property name="ezgripper_offset_x" value="0.00"/>
     <xacro:property name="ezgripper_offset_y" value="0.0"/>
     <xacro:property name="ezgripper_offset_z" value="0.21"/>
-
+    
+    <!-- Include the triple gripper with mount XACRO file -->
     <xacro:include filename="ezgripper_triple_with_mount.urdf.xacro" />
 
     <!-- Instantiate the gripper and mount assembly with specified parameters -->
-    <xacro:ezgripper_triple_with_mount prefix="${prefix}" parent_link="base_link">
+    <!-- The triple gripper uses the arm name as prefix and fixed unit numbers (1,2,3) for each gripper position -->
+    <xacro:ezgripper_triple_with_mount 
+        prefix="$(arg prefix)" 
+        parent_link="base_link">
         <origin xyz="${ezgripper_offset_x} ${ezgripper_offset_y} ${ezgripper_offset_z}" rpy="0 0 0"/>
     </xacro:ezgripper_triple_with_mount>
 

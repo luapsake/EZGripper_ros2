@@ -21,9 +21,16 @@ def generate_launch_description():
     
     output_topic_arg = DeclareLaunchArgument(
         'output_topic',
-        default_value='/gripper_joint_states',
+        default_value='/ezgripper/joint_states',
         description='Topic to publish joint states to'
     )
+    
+    prefix_arg = DeclareLaunchArgument(
+        'prefix',
+        default_value='',
+        description='Prefix for joint names to match TF tree frame IDs'
+    )
+    
     
     # Gripper joint publisher node
     gripper_joint_publisher = Node(
@@ -32,7 +39,12 @@ def generate_launch_description():
         name='gripper_joint_publisher',
         namespace=LaunchConfiguration('namespace'),
         output='screen',
-        parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}],
+        parameters=[
+            {
+                'use_sim_time': LaunchConfiguration('use_sim_time'),
+                'prefix': LaunchConfiguration('prefix')
+            }
+        ],
         remappings=[
             ('/joint_states', LaunchConfiguration('output_topic'))
         ]
@@ -52,6 +64,7 @@ def generate_launch_description():
         use_sim_time_arg,
         namespace_arg,
         output_topic_arg,
+        prefix_arg,
         
         # Nodes
         gripper_joint_publisher,

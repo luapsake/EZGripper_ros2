@@ -1,22 +1,28 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
-
-  <material name="black">
-    <color rgba="0.0 0.0 0.0 1.0"/>
-  </material>
-
-  <material name="blue">
-    <color rgba="0.0 0.0 0.8 1.0"/>
-  </material>
-
-  <material name="grey">
-    <color rgba="0.5 0.5 0.5 1"/>
-  </material>
-
-
-  <material name="white">
-    <color rgba="1.0 1.0 1.0 1.0"/> <!-- RGBA: Red, Green, Blue, Alpha (transparency) -->
-  </material>
-
+  <!-- EZGripper material color properties -->
+  <xacro:property name="ezgripper_black_rgba" value="0.0 0.0 0.0 1.0" />
+  <xacro:property name="ezgripper_blue_rgba" value="0.0 0.0 0.8 1.0" />
+  <xacro:property name="ezgripper_grey_rgba" value="0.5 0.5 0.5 1.0" />
+  <xacro:property name="ezgripper_white_rgba" value="1.0 1.0 1.0 1.0" />
+  
+  <!-- EZGripper material definitions macro -->
+  <xacro:macro name="define_ezgripper_materials">
+    <material name="ezgripper_black">
+      <color rgba="${ezgripper_black_rgba}"/>
+    </material>
+    
+    <material name="ezgripper_blue">
+      <color rgba="${ezgripper_blue_rgba}"/>
+    </material>
+    
+    <material name="ezgripper_grey">
+      <color rgba="${ezgripper_grey_rgba}"/>
+    </material>
+    
+    <material name="ezgripper_white">
+      <color rgba="${ezgripper_white_rgba}"/>
+    </material>
+  </xacro:macro>
 
 </robot>

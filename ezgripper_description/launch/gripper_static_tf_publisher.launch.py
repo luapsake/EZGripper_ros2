@@ -19,6 +19,12 @@ def generate_launch_description():
         description='Namespace for the gripper'
     )
     
+    prefix_arg = DeclareLaunchArgument(
+        'prefix',
+        default_value='',
+        description='Arm name for the gripper assembly (e.g., left_arm, right_arm)'
+    )
+    
     # Gripper static TF publisher node
     gripper_static_tf_publisher = Node(
         package='ezgripper_description',
@@ -26,7 +32,10 @@ def generate_launch_description():
         name='gripper_static_tf_publisher',
         namespace=LaunchConfiguration('namespace'),
         output='screen',
-        parameters=[{'use_sim_time': LaunchConfiguration('use_sim_time')}]
+        parameters=[{
+            'use_sim_time': LaunchConfiguration('use_sim_time'),
+            'prefix': LaunchConfiguration('prefix')
+        }]
     )
     
     # Event handler for proper cleanup
@@ -42,6 +51,7 @@ def generate_launch_description():
         # Launch arguments
         use_sim_time_arg,
         namespace_arg,
+        prefix_arg,
         
         # Nodes
         gripper_static_tf_publisher,

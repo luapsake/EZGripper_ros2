@@ -37,6 +37,13 @@ def generate_launch_description():
         description='Namespace for the gripper'
     )
     
+    prefix_arg = DeclareLaunchArgument(
+        'prefix',
+        default_value='left_arm',
+        description='Prefix for joint names to match TF tree frame IDs'
+    )
+    
+    
     rviz_arg = DeclareLaunchArgument(
         'rviz',
         default_value='true',
@@ -51,6 +58,7 @@ def generate_launch_description():
         launch_arguments={
             'use_sim_time': LaunchConfiguration('use_sim_time'),
             'namespace': LaunchConfiguration('namespace'),
+            'prefix': LaunchConfiguration('prefix'),
             'launch_joint_publisher': 'true',
             'launch_static_tf_publisher': 'true'
         }.items()
@@ -66,7 +74,7 @@ def generate_launch_description():
         parameters=[
             {
                 'use_sim_time': LaunchConfiguration('use_sim_time'),
-                'robot_description': ParameterValue(Command(['xacro', ' ', urdf_file]), value_type=str)
+                'robot_description': ParameterValue(Command(['xacro', ' ', urdf_file, ' prefix:=', LaunchConfiguration('prefix')]), value_type=str)
             }
         ],
         remappings=[
@@ -110,7 +118,14 @@ def generate_launch_description():
     shutdown_handler = RegisterEventHandler(
         OnShutdown(
             on_shutdown=[
-                LogInfo(msg=['Launch was asked to shutdown: stopping all nodes'])
+                LogInfo(msg=['Launch was asked to shutdown: stopping all nodes']),
+                # Execute a cleanup command to kill any lingering processes
+                Node(
+                    package='ezgripper_description',
+                    executable='cleanup_ezgripper_processes.py',
+                    name='cleanup_ezgripper_processes',
+                    output='screen'
+                )
             ]
         )
     )
@@ -119,6 +134,7 @@ def generate_launch_description():
         # Launch arguments
         use_sim_time_arg,
         namespace_arg,
+        prefix_arg,
         rviz_arg,
         
         # Include component launch

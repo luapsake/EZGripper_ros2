@@ -1,61 +1,67 @@
 # Individual Joint Position Controllers for EZGripper
 # Each controller defines a single joint to match the SCARA arm format
+# Joint names must match exactly with the TF tree frame IDs
 
-# Original gripper joints
-gripper1_knuckle_palm_L1_1_controller:
+# Single gripper joints with left_arm prefix to match the TF tree
+gripper_finger_L1_1_controller:
   ros__parameters:
     type: position_controllers/JointPositionController
-    joint: left_ezgripper_knuckle_palm_L1_1
+    joint: left_arm_ezgripper_knuckle_palm_L1_1
     interface_name: position
     publish_rate: 50  # Hz
 
-gripper1_knuckle_palm_L1_2_controller:
+gripper_finger_L1_2_controller:
   ros__parameters:
     type: position_controllers/JointPositionController
-    joint: left_ezgripper_knuckle_palm_L1_2
+    joint: left_arm_ezgripper_knuckle_palm_L1_2
     interface_name: position
     publish_rate: 50  # Hz
 
-# Additional joints for the triple gripper configuration
-gripper2_knuckle_palm_L1_1_controller:
+# The following controllers are commented out as they're not currently used
+# Uncomment and update if you're using a multi-gripper configuration
+
+# # Second gripper joints (if using multi-gripper configuration)
+# gripper2_finger_L1_1_controller:
+#   ros__parameters:
+#     type: position_controllers/JointPositionController
+#     joint: left_arm_2_ezgripper_knuckle_palm_L1_1
+#     interface_name: position
+#     publish_rate: 50  # Hz
+# 
+# gripper2_finger_L1_2_controller:
+#   ros__parameters:
+#     type: position_controllers/JointPositionController
+#     joint: left_arm_2_ezgripper_knuckle_palm_L1_2
+#     interface_name: position
+#     publish_rate: 50  # Hz
+# 
+# # Third gripper joints (if using multi-gripper configuration)
+# gripper3_finger_L1_1_controller:
+#   ros__parameters:
+#     type: position_controllers/JointPositionController
+#     joint: left_arm_3_ezgripper_knuckle_palm_L1_1
+#     interface_name: position
+#     publish_rate: 50  # Hz
+# 
+# gripper3_finger_L1_2_controller:
+#   ros__parameters:
+#     type: position_controllers/JointPositionController
+#     joint: left_arm_3_ezgripper_knuckle_palm_L1_2
+#     interface_name: position
+#     publish_rate: 50  # Hz
+
+# Additional controllers for center gripper (if needed)
+# These are kept for backward compatibility but should be updated in your specific setup
+center_extra_knuckle_palm_L1_1_controller:
   ros__parameters:
     type: position_controllers/JointPositionController
-    joint: ezgripper_gripper1_ezgripper_knuckle_palm_L1_1
+    joint: center_1_ezgripper_knuckle_palm_L1_1
     interface_name: position
     publish_rate: 50  # Hz
 
-gripper2_knuckle_palm_L1_2_controller:
+center_extra_knuckle_palm_L1_2_controller:
   ros__parameters:
     type: position_controllers/JointPositionController
-    joint: ezgripper_gripper1_ezgripper_knuckle_palm_L1_2
-    interface_name: position
-    publish_rate: 50  # Hz
-
-gripper3_knuckle_palm_L1_1_controller:
-  ros__parameters:
-    type: position_controllers/JointPositionController
-    joint: ezgripper_gripper2_ezgripper_knuckle_palm_L1_1
-    interface_name: position
-    publish_rate: 50  # Hz
-
-gripper3_knuckle_palm_L1_2_controller:
-  ros__parameters:
-    type: position_controllers/JointPositionController
-    joint: ezgripper_gripper2_ezgripper_knuckle_palm_L1_2
-    interface_name: position
-    publish_rate: 50  # Hz
-
-# Additional controllers for gripper3
-gripper4_knuckle_palm_L1_1_controller:
-  ros__parameters:
-    type: position_controllers/JointPositionController
-    joint: ezgripper_gripper3_ezgripper_knuckle_palm_L1_1
-    interface_name: position
-    publish_rate: 50  # Hz
-
-gripper4_knuckle_palm_L1_2_controller:
-  ros__parameters:
-    type: position_controllers/JointPositionController
-    joint: ezgripper_gripper3_ezgripper_knuckle_palm_L1_2
+    joint: center_1_ezgripper_knuckle_palm_L1_2
     interface_name: position
     publish_rate: 50  # Hz

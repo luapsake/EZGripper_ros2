@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+  <!-- Common constants for EZGripper -->
+  
+  <!-- Mathematical constants -->
+  <xacro:property name="pi" value="3.1415926535897931"/>
+  <xacro:property name="half_pi" value="${pi/2}"/>
+  <xacro:property name="two_pi" value="${2*pi}"/>
+  
+  <!-- Physical constants -->
+  <xacro:property name="deg_to_rad" value="${pi/180.0}"/>
+  <xacro:property name="rad_to_deg" value="${180.0/pi}"/>
+  
+  <!-- Common dimensions -->
+  <xacro:property name="gripper_spacing_triple" value="0.068"/>  <!-- Gripper separation in m (6.8cm) -->
+  <xacro:property name="gripper_offset_triple" value="0.01254"/>   <!-- Gripper offset in the positive X direction from the mount in m (1.254cm) -->
+</robot>

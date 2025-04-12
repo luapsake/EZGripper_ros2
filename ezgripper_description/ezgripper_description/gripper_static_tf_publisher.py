@@ -7,11 +7,13 @@ The L1 to L2 joints and finger pad joints are fixed and published as static tran
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import TransformStamped
-from tf2_ros import StaticTransformBroadcaster
+from tf2_ros import StaticTransformBroadcaster, Buffer, TransformListener
 import yaml
 import os
 import sys
 import math
+import re
+import time
 from ament_index_python.packages import get_package_share_directory
 
 # Try to import prctl for process naming
@@ -28,16 +30,31 @@ class GripperStaticTFPublisher(Node):
         # Create a static transform broadcaster
         self.static_broadcaster = StaticTransformBroadcaster(self)
         
+        # Setup TF listener for frame detection
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+        
         # Load the static transforms from the YAML configuration
         self.get_logger().info('Creating static transforms for EZGripper components')
+        
+        # Wait a moment for the TF tree to be populated
+        time.sleep(1.0)
         
         # Create static transforms for the EZGripper components
         self.create_static_transforms()
         
     def create_static_transforms(self):
-        """Create static transforms for the EZGripper components"""
+        """Create static transforms for the EZGripper components
+        
+        This method only handles the static (non-moving) parts of the gripper:
+        - The L1 to L2 finger links
+        - The finger pads
+        
+        The dynamic transforms (palm to knuckle joints) are handled by robot_state_publisher
+        based on the joint states published by gripper_joint_publisher.py.
+        """
         # Get the prefix (arm name) from the parameters
-        self.declare_parameter('prefix', '')
+        self.declare_parameter('prefix', 'gripper')
         
         # Get the prefix parameter
         prefix = self.get_parameter('prefix').value
@@ -45,120 +62,196 @@ class GripperStaticTFPublisher(Node):
         # Log the prefix being used
         self.get_logger().info(f'Using prefix "{prefix}" for frame IDs')
         
-        # Create transforms for the triple gripper only
-        # Each gripper in the triple setup has its own unit number
-        # Use the correct naming pattern with underscore between prefix (arm name) and unit_num
-        for unit_num in range(1, 4):
-            # If prefix is provided, use prefix_unit_num format
-            # Otherwise just use unit_num
+        # Try to detect palm links from the URDF or TF tree
+        palm_links = self.detect_palm_links(prefix)
+        
+        if palm_links:
+            self.get_logger().info(f'Found {len(palm_links)} palm links: {palm_links}')
+            
+            # Create static transforms for each detected palm link
+            for palm_link in palm_links:
+                # Extract the prefix from the palm link name
+                # Format could be either prefix_ezgripper_palm_link or prefix_N_ezgripper_palm_link
+                if '_ezgripper_palm_link' in palm_link:
+                    # Extract the prefix by removing the '_ezgripper_palm_link' suffix
+                    gripper_prefix = palm_link.replace('_ezgripper_palm_link', '')
+                    self.get_logger().info(f'Creating static transforms for {gripper_prefix}')
+                    self.create_finger_transforms(gripper_prefix)
+                else:
+                    self.get_logger().warn(f'Unexpected palm link format: {palm_link}')
+        else:
+            # Fallback to using the provided prefix
             if prefix:
-                # Use the provided prefix with the unit number
-                self.get_logger().info(f'Creating transforms for {prefix}_ezgripper_{unit_num}_ezgripper')
-                self.create_finger_transforms(f'{prefix}_ezgripper_{unit_num}_ezgripper')
+                self.get_logger().info(f'No palm links detected, using provided prefix: {prefix}')
+                self.create_finger_transforms(f'{prefix}_ezgripper')
             else:
-                # When no prefix is provided, use just ezgripper with the unit number
-                self.get_logger().info(f'Creating transforms for ezgripper_{unit_num}_ezgripper')
-                self.create_finger_transforms(f'ezgripper_{unit_num}_ezgripper')
+                # If no prefix and no palm links, use a default prefix
+                self.get_logger().info('No prefix provided and no palm links detected, using default prefix: gripper')
+                self.create_finger_transforms('gripper_ezgripper')
+    
+
+    def detect_palm_links(self, prefix):
+        """Detect palm links from the robot description or TF tree
+        
+        Args:
+            prefix: The prefix to filter palm links by (optional)
+            
+        Returns:
+            list: List of palm link names
+        """
+        try:
+            # Try to get the robot description parameter
+            self.declare_parameter('robot_description', '')
+            robot_description = self.get_parameter('robot_description').value
+            
+            # If we have a robot description, parse it to find palm links
+            # Each ezgripper_single.urdf.xacro instance will have a palm link with pattern ${prefix}_ezgripper_palm_link
+            if robot_description:
+                import xml.etree.ElementTree as ET
+                root = ET.fromstring(robot_description)
+                
+                # Find all links that match the palm link pattern
+                palm_links = []
+                for link in root.findall('.//link'):
+                    link_name = link.get('name', '')
+                    if 'ezgripper_palm_link' in link_name:
+                        # If prefix is provided, filter by prefix
+                        if not prefix or (prefix and link_name.startswith(prefix)):
+                            palm_links.append(link_name)
+                            self.get_logger().info(f'Found palm link in URDF: {link_name}')
+                
+                if palm_links:
+                    self.get_logger().info(f'Found {len(palm_links)} palm links in robot description')
+                    return palm_links
+                else:
+                    self.get_logger().warn('No palm links found in robot description')
+            
+            # If we don't have a robot description or didn't find any palm links,
+            # try to detect them from the TF tree
+            # The TF tree should have frames that match the pattern ${prefix}_ezgripper_palm_link
+            self.get_logger().info('Trying to detect palm links from TF tree')
+            
+            # Get all frames in the TF tree
+            all_frames = []
+            frames_str = self.tf_buffer.all_frames_as_string()
+            
+            # Look for frames that match the palm link pattern
+            palm_links = []
+            for line in frames_str.split('\n'):
+                line = line.strip()
+                if line and 'ezgripper_palm_link' in line:
+                    # Extract the frame name
+                    import re
+                    match = re.search(r'Frame ([^ ]+) exists', line)
+                    if match:
+                        frame_name = match.group(1)
+                        all_frames.append(frame_name)
+                        # If prefix is provided, filter by prefix
+                        if not prefix or (prefix and frame_name.startswith(prefix)):
+                            palm_links.append(frame_name)
+                            self.get_logger().info(f'Found palm link in TF tree: {frame_name}')
+            
+            if palm_links:
+                self.get_logger().info(f'Found {len(palm_links)} palm links in TF tree')
+                return palm_links
+            
+            # If we still don't have any palm links, create default ones based on the prefix
+            # Each ezgripper_single instance has a consistent naming pattern
+            if prefix:
+                # Create a single palm link with the provided prefix
+                palm_link = f'{prefix}_ezgripper_palm_link'
+                self.get_logger().info(f'Using default palm link based on provided prefix: {palm_link}')
+                return [palm_link]
+            else:
+                # Default to a single gripper with default prefix
+                palm_link = 'gripper_ezgripper_palm_link'
+                self.get_logger().info(f'Using default palm link with default prefix: {palm_link}')
+                return [palm_link]
+            
+        except Exception as e:
+            self.get_logger().error(f'Error detecting palm links: {str(e)}')
+            # Return a default palm link as fallback
+            if prefix:
+                return [f'{prefix}_ezgripper_palm_link']
+            else:
+                return ['gripper_ezgripper_palm_link']
     
     def create_finger_transforms(self, prefix):
-        """Create transforms for a gripper's fingers
+        """Create static transforms for a gripper's fingers based on the ezgripper_single.urdf.xacro structure.
+        
+        Each ezgripper_single instance has:
+        - A palm link: ${prefix}_ezgripper_palm_link
+        - Two knuckle joints: ${prefix}_ezgripper_knuckle_palm_L1_1 and ${prefix}_ezgripper_knuckle_palm_L1_2
+        - Corresponding finger links and pads
+        
         Note: For the underactuated EZGripper, only the palm to L1 joints are actuated.
         The L1 to L2 joints and finger pad joints are fixed and published as static transforms.
+        
+        This method only handles the static (non-moving) transforms:
+        - knuckle to finger L1
+        - L1 to L2
+        - L2 to finger pad
+        
+        The dynamic transforms (palm to knuckle) are handled by robot_state_publisher
+        based on the joint states published by gripper_joint_publisher.py.
         """
-        # The palm to L1 joints are actuated and handled by the joint_state_publisher
-        # We only publish the fixed L1 to L2 and L2 to pad transforms
-        
-        # Extract the prefix and unit_num from the input prefix (format: prefix_ezgripper_unit_num_ezgripper)
-        parts = prefix.split('_')
-        if len(parts) >= 4:
-            # Format should be prefix_ezgripper_unit_num_ezgripper
-            actual_prefix = parts[0]
-            unit_num = parts[2]
-            
-            # Create transform from finger L1_1 to finger L2_1 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_knuckle_palm_L1_1',
-                child_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_L1_1',
-                x=0.052, y=0.0, z=0.0,
-                roll=0.0, pitch=0.0, yaw=0.0
-            )
-            
-            # Create transform from finger L1_1 to finger L2_1 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_L1_1',
-                child_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_L2_1',
-                x=0.052, y=0.0, z=0.0,
-                roll=0.0, pitch=0.0, yaw=0.0
-            )
-            
-            # Create transform from finger L2_1 to finger pad 1 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_L2_1',
-                child_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_pad_1',
-                x=0.01849, y=0.0, z=0.0,
-                roll=0.0, pitch=-0.23, yaw=0.0
-            )
-            
-            # Create transform from finger L1_2 to finger L2_2 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_knuckle_palm_L1_2',
-                child_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_L1_2',
-                x=0.052, y=0.0, z=0.0,
-                roll=0.0, pitch=0.0, yaw=0.0
-            )
-            
-            # Create transform from finger L1_2 to finger L2_2 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_L1_2',
-                child_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_L2_2',
-                x=0.052, y=0.0, z=0.0,
-                roll=0.0, pitch=0.0, yaw=0.0
-            )
-            
-            # Create transform from finger L2_2 to finger pad 2 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_L2_2',
-                child_frame=f'{actual_prefix}_ezgripper_{unit_num}_ezgripper_finger_pad_2',
-                x=0.01849, y=0.0, z=0.0,
-                roll=0.0, pitch=-0.23, yaw=0.0
-            )
+        # Ensure we have the correct prefix format with _ezgripper
+        if not '_ezgripper' in prefix:
+            full_prefix = f'{prefix}_ezgripper'
         else:
-            # Fallback to the original format if the prefix doesn't match the expected format
-            self.get_logger().warn(f'Unexpected prefix format: {prefix}. Expected format: prefix_unit_num_ezgripper')
+            full_prefix = prefix
             
-            # Create transform from finger L1_1 to finger L2_1 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{prefix}_ezgripper_finger_L1_1',
-                child_frame=f'{prefix}_ezgripper_finger_L2_1',
-                x=0.052, y=0.0, z=0.0,
-                roll=0.0, pitch=0.0, yaw=0.0
-            )
-            
-            # Create transform from finger L2_1 to finger pad 1 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{prefix}_ezgripper_finger_L2_1',
-                child_frame=f'{prefix}_ezgripper_finger_pad_1',
-                x=0.01849, y=0.0, z=0.0,
-                roll=0.0, pitch=-0.23, yaw=0.0
-            )
-            
-            # Create transform from finger L1_2 to finger L2_2 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{prefix}_ezgripper_finger_L1_2',
-                child_frame=f'{prefix}_ezgripper_finger_L2_2',
-                x=0.052, y=0.0, z=0.0,
-                roll=0.0, pitch=0.0, yaw=0.0
-            )
-            
-            # Create transform from finger L2_2 to finger pad 2 (fixed joint)
-            self.publish_static_transform(
-                parent_frame=f'{prefix}_ezgripper_finger_L2_2',
-                child_frame=f'{prefix}_ezgripper_finger_pad_2',
-                x=0.01849, y=0.0, z=0.0,
-                roll=0.0, pitch=-0.23, yaw=0.0
-            )
+        self.get_logger().info(f'Creating static transforms for gripper with prefix: {full_prefix}')
         
-        self.get_logger().info(f'Created static transforms for {prefix} fingers')
+        # Create transforms based on the URDF structure in ezgripper_single.urdf.xacro
+        # Note: We skip the palm to knuckle joints as they are dynamic (actuated)
+        
+        # Fixed transforms for the finger links
+        # First finger chain
+        self.publish_static_transform(
+            parent_frame=f'{full_prefix}_knuckle_palm_L1_1',
+            child_frame=f'{full_prefix}_finger_L1_1',
+            x=0.0, y=0.0, z=0.0,
+            roll=0.0, pitch=0.0, yaw=0.0  # Original orientation
+        )
+        
+        self.publish_static_transform(
+            parent_frame=f'{full_prefix}_finger_L1_1',
+            child_frame=f'{full_prefix}_finger_L2_1',
+            x=0.052, y=0.0, z=0.0,  # From URDF: L1 to L2 distance
+            roll=0.0, pitch=0.0, yaw=0.0
+        )
+        
+        self.publish_static_transform(
+            parent_frame=f'{full_prefix}_finger_L2_1',
+            child_frame=f'{full_prefix}_finger_pad_1',
+            x=0.01849, y=0.0, z=0.0,  # From URDF: L2 to pad distance
+            roll=0.0, pitch=-0.23, yaw=0.0  # From URDF: pad angle
+        )
+            
+        # Second finger chain
+        self.publish_static_transform(
+            parent_frame=f'{full_prefix}_knuckle_palm_L1_2',
+            child_frame=f'{full_prefix}_finger_L1_2',
+            x=0.0, y=0.0, z=0.0,
+            roll=0.0, pitch=0.0, yaw=0.0  # Original orientation
+        )
+        
+        self.publish_static_transform(
+            parent_frame=f'{full_prefix}_finger_L1_2',
+            child_frame=f'{full_prefix}_finger_L2_2',
+            x=0.052, y=0.0, z=0.0,  # From URDF: L1 to L2 distance
+            roll=0.0, pitch=0.0, yaw=0.0
+        )
+        
+        self.publish_static_transform(
+            parent_frame=f'{full_prefix}_finger_L2_2',
+            child_frame=f'{full_prefix}_finger_pad_2',
+            x=0.01849, y=0.0, z=0.0,  # From URDF: L2 to pad distance
+            roll=0.0, pitch=-0.23, yaw=0.0  # From URDF: pad angle
+        )
+        
+        self.get_logger().info(f'Created static transforms for {full_prefix} fingers')
         
     def publish_static_transform(self, parent_frame, child_frame, x, y, z, roll, pitch, yaw):
         """Publish a static transform
@@ -197,6 +290,8 @@ class GripperStaticTFPublisher(Node):
         # Publish the transform
         self.static_broadcaster.sendTransform(transform)
         self.get_logger().info(f'Created static transform from {parent_frame} to {child_frame}')
+        
+
 
 def main(args=None):
     # Set process name for better identification in system tools
