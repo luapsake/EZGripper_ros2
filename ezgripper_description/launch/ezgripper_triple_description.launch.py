@@ -19,7 +19,15 @@ def generate_launch_description():
     # Get package directories
     pkg_dir = get_package_share_directory('ezgripper_description')
     
-    # Path to the URDF file
+    # Create a cleanup node to run at the beginning of the launch process
+    cleanup_node = Node(
+        package='ezgripper_description',
+        executable='cleanup_ezgripper_processes.py',
+        name='cleanup_ezgripper_processes',
+        output='screen'
+    )
+    
+    # Path to the URDF file - use absolute path
     urdf_file = os.path.join(pkg_dir, 'urdf', 'ezgripper_triple_with_mount_standalone.urdf.xacro')
     
     # Declare launch arguments
@@ -69,7 +77,6 @@ def generate_launch_description():
     # We'll use only the triple joint publisher below
     
     # For a triple gripper, we need a special joint publisher that can handle all three grippers
-    # We'll use a modified version of the joint publisher with fixed unit numbers (1,2,3)
     joint_publisher_triple = Node(
         package='ezgripper_description',
         executable='gripper_joint_publisher',
@@ -79,9 +86,7 @@ def generate_launch_description():
         parameters=[
             {
                 'use_sim_time': LaunchConfiguration('use_sim_time'),
-                'prefix': LaunchConfiguration('prefix'),
-                # Use fixed unit numbers 1,2,3 for the triple gripper
-                'unit_nums_str': '1,2,3',
+                'prefix': LaunchConfiguration('prefix')
             }
         ],
         remappings=[
@@ -103,12 +108,7 @@ def generate_launch_description():
         condition=IfCondition(LaunchConfiguration('launch_static_tf_publisher'))
     )
     
-    # Legacy unit number parameter (kept for backward compatibility)
-    unit_num_arg = DeclareLaunchArgument(
-        'unit_num',
-        default_value='1',
-        description='Legacy parameter - kept for backward compatibility'
-    )
+    # Triple gripper numbering is now embedded in the xacro files
     
     # Add a prefix argument
     prefix_arg = DeclareLaunchArgument(
@@ -128,8 +128,8 @@ def generate_launch_description():
             {
                 'use_sim_time': LaunchConfiguration('use_sim_time'),
                 'robot_description': ParameterValue(
-                    Command(['xacro', ' ', urdf_file, 
-                            ' unit_num:=', LaunchConfiguration('unit_num'),
+                    # Use Command to run xacro with proper arguments and spaces between parameters
+                    Command(['xacro', ' ', urdf_file,
                             ' prefix:=', LaunchConfiguration('prefix')]),
                     value_type=str),
                 'publish_frequency': 50.0,
@@ -197,6 +197,9 @@ def generate_launch_description():
     )
     
     return LaunchDescription([
+        # Cleanup existing processes first
+        cleanup_node,
+        
         # Launch arguments
         use_sim_time_arg,
         enable_hardware_arg,
@@ -205,7 +208,7 @@ def generate_launch_description():
         launch_robot_state_publisher_arg,
         launch_static_tf_publisher_arg,
         rviz_arg,
-        unit_num_arg,
+
         prefix_arg,
         
         # Included launch files
